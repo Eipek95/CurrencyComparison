@@ -47,7 +47,7 @@ namespace CurrencyComparisonAPI.Controllers
                 await _logService.AddLogAsync(new CreateLogDtoModel
                 {
                     TransactionDate = DateTime.Now,
-                    UserIP = HttpContext.Connection.LocalIpAddress?.ToString(),
+                    UserIP = HttpContext.Connection.RemoteIpAddress?.ToString(),
                     Currency = currency,
                     ErrorFunction = nameof(GetCurrencyComparison),
                     ErrorDescription = ex.Message

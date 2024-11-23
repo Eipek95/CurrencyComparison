@@ -22,6 +22,7 @@ namespace Business.Concrete
                 var currentResponse = await client.GetStringAsync(currentCurrencyUrl);
                 var currentRate = GetCurrencyRateFromXml(currentResponse, currencyCode);
 
+
                 // Seçilen tarihteki kuru al
                 var oldResponse = await client.GetStringAsync(oldCurrencyUrl);
                 var oldRate = GetCurrencyRateFromXml(oldResponse, currencyCode);
@@ -57,13 +58,12 @@ namespace Business.Concrete
         {
             var xDoc = XDocument.Parse(xmlContent);
 
-            // Belirtilen döviz kodu için ForexBuying değerini al
             var currency = xDoc.Descendants("Currency")
                                .FirstOrDefault(x => x.Attribute("Kod")?.Value == currencyCode);
 
             if (currency != null)
             {
-                if (decimal.TryParse(currency.Element("ForexBuying")?.Value, out var rate))
+                if (decimal.TryParse(currency.Element("ForexBuying")?.Value.Replace(".", ","), out var rate))
                 {
                     return rate;
                 }
