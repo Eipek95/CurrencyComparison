@@ -1,0 +1,173 @@
+﻿@{
+    ViewData["Title"] = "Kurlar";
+}
+
+
+<h1>Kurlar</h1>
+
+<div class="container mt-5">
+    <div class="mt-4">
+        <label for="currencyCode">Para Birimi:</label>
+        <select id="currencyCode" class="form-control mb-2" required>
+            <option value="" disabled selected>Para Birimi Seçin</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="USD">USD - Abd Doları</option>
+            <option value="GBP">GBP - İngiliz Sterlini</option>
+            <option value="CHF">CHF - İsviçre Frangı</option>
+        </select>
+
+        <label for="date">Tarih Seçiniz:</label>
+        <input type="date" id="date" class="form-control mb-2" required />
+        <button class="btn btn-primary mt-2" id="getCurrencyData">Görüntüle</button>
+    </div>
+
+    <!-- Currency Data Table -->
+    <table class="table table-bordered mt-4" id="currencyTable">
+        <thead>
+            <tr>
+                <th>Para Birimi</th>
+                <th>Günümüzdeki Değeri</th>
+                <th>Seçilen Tarihteki Değeri</th>
+                <th>Fark</th>
+                <th>Değişim Yüzdesi </th>
+                <th>Değişim Grafiği</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+<script>
+    // Sayfa yüklendiğinde token kontrolünü yap
+    window.onload = function() {
+        const token = localStorage.getItem("authToken");
+        if (!token || !isTokenValid(token)) {
+            alert("Geçerli bir oturum bulunmamaktadır. Lütfen giriş yapın.");
+            window.location.href = "/"; // Token geçerli değilse giriş sayfasına yönlendir
+        }
+    };
+
+    document.getElementById('getCurrencyData').addEventListener('click', async function () {
+        // Token'ı kontrol et
+        const token = localStorage.getItem("authToken");
+        if (!isTokenValid(token)) {
+            alert("Geçerli bir oturum bulunmamaktadır. Lütfen giriş yapın.");
+            window.location.href = "/"; // Token geçerli değilse giriş sayfasına yönlendir
+            return;
+        }
+
+        const currencyCode = document.getElementById("currencyCode").value; // Döviz kodu seçimi
+        const dateInput = document.getElementById("date").value;
+
+        if (!currencyCode || !dateInput) {
+            alert("Lütfen hem para birimi kodunu hem de tarihi belirtin.");
+            return;
+        }
+
+        const date = new Date(dateInput);
+        if (isNaN(date)) {
+            alert("Geçersiz tarih biçimi.");
+            return;
+        }
+
+        const formattedDate = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
+        const apiUrl = `https://localhost:7173/api/Currency/${currencyCode}/${formattedDate}`;
+
+        try {
+            const tableBody = document.querySelector("#currencyTable tbody");
+            tableBody.innerHTML = '';
+
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` // Authorization header ekle
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP hatası! durum: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data && data.currentRate && data.oldRate) {
+                const currentRate = parseFloat(data.currentRate);
+                const oldRate = parseFloat(data.oldRate);
+                const difference = currentRate - oldRate;
+                const percentageChange = ((difference / oldRate) * 100).toFixed(2);
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${currencyCode}</td>
+                    <td>${currentRate.toFixed(4)}</td>
+                    <td>${oldRate.toFixed(4)}</td>
+                    <td>${difference.toFixed(4)}</td>
+                    <td>${percentageChange}%</td>
+                    <td>
+                        <canvas width="100" height="100" class="changeGraph" data-difference="${difference}"></canvas>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+
+                const changeGraphCanvas = document.querySelector('.changeGraph');
+                const ctx = changeGraphCanvas.getContext('2d');
+
+                ctx.clearRect(0, 0, 100, 100);
+                if (difference > 0) {
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.beginPath();
+                    ctx.moveTo(50, 20);
+                    ctx.lineTo(70, 20);
+                    ctx.lineTo(60, 5);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (difference < 0) {
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.beginPath();
+                    ctx.moveTo(50, 20);
+                    ctx.lineTo(70, 20);
+                    ctx.lineTo(60, 35);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    ctx.strokeStyle = '#95a5a6';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(30, 20);
+                    ctx.lineTo(70, 20);
+                    ctx.stroke();
+                }
+            } else {
+                alert("API geçerli veri döndürmedi.");
+            }
+        } catch (error) {
+            console.error("Veri alınırken hata oluştu:", error);
+            alert("Veri alınırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.");
+        }
+    });
+
+    // Token geçerliliğini kontrol etme
+    function isTokenValid(token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1])); // JWT token'ı decode et
+            const exp = payload.exp; // exp, token'ın son kullanma tarihi
+            const currentTime = Math.floor(Date.now() / 1000); // Geçerli zaman (saniye cinsinden)
+
+            // Eğer token süresi dolmuşsa
+            if (exp < currentTime) {
+                return false; // Token geçersiz
+            }
+
+            return true; // Token geçerli
+        } catch (e) {
+            console.error("Token doğrulama hatası:", e);
+            return false;
+        }
+    }
+</script>
+
+
+

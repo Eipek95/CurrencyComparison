@@ -1,11 +1,13 @@
 ﻿using Business.Abstract;
 using Business.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CurrencyComparisonAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CurrencyController : ControllerBase
     {
         private readonly ICurrencyService _currencyService;
@@ -16,6 +18,14 @@ namespace CurrencyComparisonAPI.Controllers
             _currencyService = currencyService;
             _logService = logService;
         }
+
+
+        [HttpGet("secure-data")]
+        public IActionResult GetSecureData()
+        {
+            return Ok(new { message = "Bu endpoint JWT doğrulaması gerektiriyor!" });
+        }
+
 
         [HttpGet("{currency}/{date}")]
         public async Task<IActionResult> GetCurrencyComparison(string currency, string date)
