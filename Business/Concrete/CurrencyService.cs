@@ -9,10 +9,8 @@ namespace Business.Concrete
         public async Task<CurrencyComparisonResultDto> GetCurrencyRatesAsync(string currencyCode, string date)
         {
 
-
             string currentCurrencyUrl = "https://www.tcmb.gov.tr/kurlar/today.xml";
             string oldCurrencyUrl = $"https://www.tcmb.gov.tr/kurlar/{date.Substring(4, 4)}{date.Substring(2, 2)}/{date}.xml";
-
 
             try
             {

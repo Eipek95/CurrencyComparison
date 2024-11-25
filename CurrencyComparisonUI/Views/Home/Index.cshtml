@@ -1,6 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Giriş Yap";
-    Layout="";
+    Layout = "";
 }
 
 
@@ -20,7 +20,7 @@
             <div class="container mt-5">
                 <div class="row justify-content-center">
                     <div class="col-md-4">
-                        <h3 class="text-center">CurrencyComparison </h3>
+                        <h3 class="text-center">CurrencyComparison</h3>
                         <hr />
                         <form id="loginForm">
                             <div class="mb-3">
@@ -43,6 +43,53 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
+
+
+        // Sayfa yüklenmeden önce token kontrolü yap
+        (function () {
+            const token = localStorage.getItem("authToken");
+
+            if (token && isTokenValid(token)) {
+                const remainingTime = getTokenRemainingTimeFormatted(token);
+                alert(`Geçerli bir oturum mevcut. Kalan süre: ${remainingTime}`);
+                window.location.href = "/currency"; // Currency sayfasına yönlendir
+            }
+        })();
+
+        // Token geçerlilik kontrolü
+        function isTokenValid(token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1])); // Token'dan payload'ı çöz
+                const exp = payload.exp; // Expiration zamanı (Unix zaman damgası)
+                const currentTime = Math.floor(Date.now() / 1000); // Mevcut zaman (saniye olarak)
+
+                return exp > currentTime; // Expiration tarihi geçerli mi?
+            } catch (e) {
+                console.error("Token doğrulama hatası:", e);
+                return false;
+            }
+        }
+
+        // Kalan süreyi uygun formatta döndür
+        function getTokenRemainingTimeFormatted(token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const exp = payload.exp;
+                const currentTime = Math.floor(Date.now() / 1000);
+                const remainingSeconds = exp - currentTime;
+
+                if (remainingSeconds <= 60) {
+                    return `${remainingSeconds} saniye`;
+                } else {
+                    const remainingMinutes = Math.floor(remainingSeconds / 60);
+                    return `${remainingMinutes} dakika`;
+                }
+            } catch (e) {
+                console.error("Token süresi hesaplama hatası:", e);
+                return "Hata: Süre hesaplanamıyor.";
+            }
+        }
+
         document.getElementById("loginForm").addEventListener("submit", async function (event) {
             event.preventDefault();
 
@@ -57,14 +104,15 @@
 
             if (response.ok) {
             const data = await response.json();
-            alert(data.token);
             localStorage.setItem("authToken", data.token);
-            alert("Giriş Başarılı!");
-            window.location.href = "/currency"; // Kullanıcıyı yönlendiriyoruz
+            window.location.href = "/currency";
         } else {
             alert("Giriş Başarısız. Lütfen Tekrar Deneyin.");
         }
         });
+
+
+   
     </script>
 </body>
 </html>

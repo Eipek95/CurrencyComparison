@@ -7,6 +7,9 @@
 
 <div class="container mt-5">
     <div class="mt-4">
+        <div class="alert alert-info text-center" role="alert">
+            Lütfen Gün Seçerken Haftasonu olmamasına dikkat edin!
+        </div>
         <label for="currencyCode">Para Birimi:</label>
         <select id="currencyCode" class="form-control mb-2" required>
             <option value="" disabled selected>Para Birimi Seçin</option>
@@ -26,8 +29,8 @@
         <thead>
             <tr>
                 <th>Para Birimi</th>
-                <th>Günümüzdeki Değeri</th>
-                <th>Seçilen Tarihteki Değeri</th>
+                <th>Mevcut Kur</th>
+                <th>Seçilen Tarihteki Kur</th>
                 <th>Fark</th>
                 <th>Değişim Yüzdesi </th>
                 <th>Değişim Grafiği</th>
@@ -39,26 +42,35 @@
 </div>
 
 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Sayfa yüklendiğinde token kontrolünü yap
-    window.onload = function() {
+
+    // Sayfa yüklenmeden önce token kontrolü yap
+    (function () {
         const token = localStorage.getItem("authToken");
+
         if (!token || !isTokenValid(token)) {
-            alert("Geçerli bir oturum bulunmamaktadır. Lütfen giriş yapın.");
-            window.location.href = "/"; // Token geçerli değilse giriş sayfasına yönlendir
+            alert("Geçerli bir oturum bulunmamaktadır veya oturum süresi dolmuş. Lütfen tekrar giriş yapın.");
+            window.location.href = "/"; // Index sayfasına yönlendir
         }
-    };
+
+        else{
+            const remainingTime = getTokenRemainingTimeFormatted(token);
+             alert(`Hoşgeldiniz! Oturum için Kalan süre: ${remainingTime}`);
+        }
+    })();
+
 
     document.getElementById('getCurrencyData').addEventListener('click', async function () {
-        // Token'ı kontrol et
         const token = localStorage.getItem("authToken");
         if (!isTokenValid(token)) {
             alert("Geçerli bir oturum bulunmamaktadır. Lütfen giriş yapın.");
-            window.location.href = "/"; // Token geçerli değilse giriş sayfasına yönlendir
+            window.location.href = "/";
             return;
         }
 
-        const currencyCode = document.getElementById("currencyCode").value; // Döviz kodu seçimi
+        const currencyCode = document.getElementById("currencyCode").value;
         const dateInput = document.getElementById("date").value;
 
         if (!currencyCode || !dateInput) {
@@ -83,7 +95,7 @@
                 method: 'GET',
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}` // Authorization header ekle
+                    "Authorization": `Bearer ${token}`
                 }
             });
 
@@ -107,39 +119,41 @@
                     <td>${difference.toFixed(4)}</td>
                     <td>${percentageChange}%</td>
                     <td>
-                        <canvas width="100" height="100" class="changeGraph" data-difference="${difference}"></canvas>
+                        <canvas id="changeGraph-${currencyCode}" width="200" height="100"></canvas>
                     </td>
                 `;
                 tableBody.appendChild(row);
 
-                const changeGraphCanvas = document.querySelector('.changeGraph');
-                const ctx = changeGraphCanvas.getContext('2d');
+                // Bar Chart: Eski ve Yeni Kur
+                const barCtx = document.getElementById(`changeGraph-${currencyCode}`).getContext('2d');
+                new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Seçilen Tarihteki Kur', 'Mevcut Kur'],
+                        datasets: [{
+                            label: 'Kur Karşılaştırması',
+                            data: [oldRate, currentRate],
+                            backgroundColor: [
+                                '#3498db',
+                                difference >= 0 ? '#2ecc71' : '#e74c3c'
+                            ],
+                            borderColor: [
+                                '#2980b9',
+                                difference >= 0 ? '#27ae60' : '#c0392b'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
 
-                ctx.clearRect(0, 0, 100, 100);
-                if (difference > 0) {
-                    ctx.fillStyle = '#2ecc71';
-                    ctx.beginPath();
-                    ctx.moveTo(50, 20);
-                    ctx.lineTo(70, 20);
-                    ctx.lineTo(60, 5);
-                    ctx.closePath();
-                    ctx.fill();
-                } else if (difference < 0) {
-                    ctx.fillStyle = '#e74c3c';
-                    ctx.beginPath();
-                    ctx.moveTo(50, 20);
-                    ctx.lineTo(70, 20);
-                    ctx.lineTo(60, 35);
-                    ctx.closePath();
-                    ctx.fill();
-                } else {
-                    ctx.strokeStyle = '#95a5a6';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(30, 20);
-                    ctx.lineTo(70, 20);
-                    ctx.stroke();
-                }
+               
             } else {
                 alert("API geçerli veri döndürmedi.");
             }
@@ -149,22 +163,39 @@
         }
     });
 
-    // Token geçerliliğini kontrol etme
     function isTokenValid(token) {
         try {
-            const payload = JSON.parse(atob(token.split('.')[1])); // JWT token'ı decode et
-            const exp = payload.exp; // exp, token'ın son kullanma tarihi
-            const currentTime = Math.floor(Date.now() / 1000); // Geçerli zaman (saniye cinsinden)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const exp = payload.exp;
+            const currentTime = Math.floor(Date.now() / 1000);
 
-            // Eğer token süresi dolmuşsa
             if (exp < currentTime) {
-                return false; // Token geçersiz
+                return false;
             }
 
-            return true; // Token geçerli
+            return true;
         } catch (e) {
             console.error("Token doğrulama hatası:", e);
             return false;
+        }
+    }
+
+        function getTokenRemainingTimeFormatted(token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const exp = payload.exp;
+            const currentTime = Math.floor(Date.now() / 1000);
+            const remainingSeconds = exp - currentTime;
+
+            if (remainingSeconds <= 60) {
+                return `${remainingSeconds} saniye`;
+            } else {
+                const remainingMinutes = Math.floor(remainingSeconds / 60);
+                return `${remainingMinutes} dakika`;
+            }
+        } catch (e) {
+            console.error("Token süresi hesaplama hatası:", e);
+            return "Hata: Süre hesaplanamıyor.";
         }
     }
 </script>

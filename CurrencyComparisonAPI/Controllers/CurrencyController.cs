@@ -2,6 +2,7 @@
 using Business.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 
 namespace CurrencyComparisonAPI.Controllers
 {
@@ -20,28 +21,27 @@ namespace CurrencyComparisonAPI.Controllers
         }
 
 
-        [HttpGet("secure-data")]
-        public IActionResult GetSecureData()
-        {
-            return Ok(new { message = "Bu endpoint JWT doğrulaması gerektiriyor!" });
-        }
-
-
         [HttpGet("{currency}/{date}")]
         public async Task<IActionResult> GetCurrencyComparison(string currency, string date)
         {
             try
             {
-                var rate = await _currencyService.GetCurrencyRatesAsync(currency, date);
+
+                if (!DateTime.TryParseExact(date, "ddMMyyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                {
+                    return BadRequest(new { Message = "Geçersiz tarih formatı. Tarih ddMMyyyy formatında olmalıdır." });
+                }
+
+                var rate = await _currencyService.GetCurrencyRatesAsync(currency.ToUpper(), date);
 
                 if (rate == null)
-                    return NotFound(new { Message = "Currency data not found.", Currency = currency });
+                    return NotFound(new { Message = "Para birimi verisi bulunamadı.", Currency = currency });
 
                 // Fark ve yüzdesel değişimi hesapla
                 decimal difference = rate.Difference;
-                decimal percentageChange = rate.Difference;
+                decimal percentageChange = rate.PercentageChange;
 
-                // Sonuçları döndür
+
                 return Ok(new CurrencyComparisonResultDto
                 {
                     Currency = currency,
@@ -66,7 +66,7 @@ namespace CurrencyComparisonAPI.Controllers
                 // Sunucu hatası döndür
                 return StatusCode(500, new
                 {
-                    Message = "An error occurred while processing your request.",
+                    Message = "İsteğiniz işlenirken bir hata oluştu.",
                     Error = ex.Message
                 });
             }
