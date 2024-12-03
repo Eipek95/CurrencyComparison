@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SharedLibrary.DTOs
+﻿namespace SharedLibrary.DTOs
 {
-    internal class NoDataDto
+    public class NoDataDto
     {
     }
 }
