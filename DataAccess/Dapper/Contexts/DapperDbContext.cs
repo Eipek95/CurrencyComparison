@@ -18,10 +18,16 @@ namespace DataAccess.Dapper.Contexts
         {
             get
             {
-                if (_dbConnection == null || _dbConnection.State == ConnectionState.Closed)
+                if (_dbConnection == null)
                 {
                     _dbConnection = new SqlConnection(_configuration.GetConnectionString("SqlConnection"));
                 }
+
+                if (_dbConnection.State == ConnectionState.Closed)
+                {
+                    _dbConnection.Open();
+                }
+
                 return _dbConnection;
             }
         }
