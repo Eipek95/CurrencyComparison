@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utilities\Util
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CurrencyComparisonUI", "CurrencyComparisonUI\CurrencyComparisonUI.csproj", "{1A7A81CB-64DB-416D-9AE7-45819BA98B25}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedLibrary", "SharedLibrary\SharedLibrary.csproj", "{ACB80BF5-F1A5-4564-A87B-3AA220E44998}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{1A7A81CB-64DB-416D-9AE7-45819BA98B25}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A7A81CB-64DB-416D-9AE7-45819BA98B25}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A7A81CB-64DB-416D-9AE7-45819BA98B25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACB80BF5-F1A5-4564-A87B-3AA220E44998}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACB80BF5-F1A5-4564-A87B-3AA220E44998}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACB80BF5-F1A5-4564-A87B-3AA220E44998}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACB80BF5-F1A5-4564-A87B-3AA220E44998}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

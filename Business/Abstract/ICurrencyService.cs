@@ -1,9 +1,10 @@
 ﻿using Business.Dtos;
+using SharedLibrary.DTOs;
 
 namespace Business.Abstract
 {
     public interface ICurrencyService
     {
-        Task<CurrencyComparisonResultDto> GetCurrencyRatesAsync(string currencyCode, string date);
+        Task<Response<CurrencyComparisonResultDto>> GetCurrencyRatesAsync(string currencyCode, string date);
     }
 }

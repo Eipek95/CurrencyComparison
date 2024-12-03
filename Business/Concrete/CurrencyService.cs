@@ -1,13 +1,20 @@
 ﻿using Business.Abstract;
 using Business.Dtos;
+using SharedLibrary.DTOs;
+using System.Globalization;
+using System.Net;
 using System.Xml.Linq;
 
 namespace Business.Concrete
 {
     public class CurrencyService : ICurrencyService
     {
-        public async Task<CurrencyComparisonResultDto> GetCurrencyRatesAsync(string currencyCode, string date)
+        public async Task<Response<CurrencyComparisonResultDto>> GetCurrencyRatesAsync(string currencyCode, string date)
         {
+            if (!DateTime.TryParseExact(date, "ddMMyyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            {
+                return CreateErrorResponse("Geçersiz tarih formatı. Tarih ddMMyyyy formatında olmalıdır");
+            }
 
             string currentCurrencyUrl = "https://www.tcmb.gov.tr/kurlar/today.xml";
             string oldCurrencyUrl = $"https://www.tcmb.gov.tr/kurlar/{date.Substring(4, 4)}{date.Substring(2, 2)}/{date}.xml";
@@ -15,6 +22,7 @@ namespace Business.Concrete
             try
             {
                 using var client = new HttpClient();
+
 
                 // Bugünkü kuru al
                 var currentResponse = await client.GetStringAsync(currentCurrencyUrl);
@@ -31,25 +39,26 @@ namespace Business.Concrete
                     var difference = currentRate.Value - oldRate.Value;
                     var percentageChange = (difference / oldRate.Value) * 100;
 
-                    return new CurrencyComparisonResultDto
+
+                    return Response<CurrencyComparisonResultDto>.Success(new CurrencyComparisonResultDto
                     {
                         Currency = currencyCode,
                         CurrentRate = currentRate.Value,
                         OldRate = oldRate.Value,
                         Difference = difference,
                         PercentageChange = percentageChange
-                    };
-                }
+                    }, Convert.ToInt16(HttpStatusCode.OK));
 
-                throw new Exception("Döviz kurları alınamadı.");
+                }
+                return CreateErrorResponse("Döviz kurları alınamadı.");
             }
             catch (HttpRequestException httpEx)
             {
-                throw new Exception("HTTP isteği sırasında bir hata oluştu.", httpEx);
+                return CreateErrorResponse("HTTP isteği sırasında bir hata oluştu.");
             }
             catch (Exception ex)
             {
-                throw new Exception($"Kur bilgisi karşılaştırılırken bir hata oluştu: {ex.Message}", ex);
+                return CreateErrorResponse($"Kur bilgisi karşılaştırılırken bir hata oluştu: {ex.Message}");
             }
         }
         private decimal? GetCurrencyRateFromXml(string xmlContent, string currencyCode)
@@ -68,6 +77,12 @@ namespace Business.Concrete
             }
 
             return null;
+        }
+
+        private Response<CurrencyComparisonResultDto> CreateErrorResponse(string errorMessage)
+        {
+            var errorDto = new ErrorDto(errorMessage, true);
+            return Response<CurrencyComparisonResultDto>.Fail(errorDto, Convert.ToInt16(HttpStatusCode.BadRequest));
         }
     }
 }

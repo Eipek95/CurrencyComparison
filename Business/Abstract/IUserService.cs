@@ -1,9 +1,10 @@
 ﻿using Business.Dtos;
+using SharedLibrary.DTOs;
 
 namespace Business.Abstract
 {
     public interface IUserService
     {
-        Task<UserDtoModel> GetUserByUsernameAsync(string username);
+        Task<Response<UserDtoModel>> GetUserByUsernameAsync(LoginRequestDto request);
     }
 }
