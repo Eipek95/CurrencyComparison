@@ -104,7 +104,7 @@
 
             if (response.ok) {
             const data = await response.json();
-            localStorage.setItem("authToken", data.token);
+            localStorage.setItem("authToken", data.data.token);
             window.location.href = "/currency";
         } else {
             alert("Giriş Başarısız. Lütfen Tekrar Deneyin.");

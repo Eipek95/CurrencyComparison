@@ -105,9 +105,9 @@
 
             const data = await response.json();
 
-            if (data && data.currentRate && data.oldRate) {
-                const currentRate = parseFloat(data.currentRate);
-                const oldRate = parseFloat(data.oldRate);
+            if (data.data && data.data.currentRate && data.data.oldRate) {
+                const currentRate = parseFloat(data.data.currentRate);
+                const oldRate = parseFloat(data.data.oldRate);
                 const difference = currentRate - oldRate;
                 const percentageChange = ((difference / oldRate) * 100).toFixed(2);
 
